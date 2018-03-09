@@ -13,21 +13,21 @@ theme_settings:
 
   # Header and footer text
   header_text: > #two or three lines to describe your site
-      끄적임
+      swoo's personal github pages.
   header_text_feature_image: assets/img/pexels/triangular.jpeg
   footer_text: >
    Powered by <a href="https://jekyllrb.com/">Jekyll</a> with <a href="https://github.com/sylhare/Type-on-Strap">Type on Strap</a>
 
   # Icons
   rss: true  # Make sure you created a feed.xml with feed.xml layout
-  email_address: # Full email address, e.g. "sam@example.com"
+  email_address: flycielo@gmail.com
   behance:
   bitbucket:
   dribbble:
   facebook:
   flickr:
   gitlab:
-  github: "sylhare"
+  github: "mrflsee"
   google_plus:
   instagram:
   keybase:
