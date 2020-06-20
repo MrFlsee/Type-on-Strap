@@ -1,0 +1,109 @@
+I"}<h1 id="pixijs-좌표계-변환에-관하여">pixi.js 좌표계 변환에 관하여</h1>
+
+<p>WebGl은 다음과 같은 좌표계(world coordinates system)를 사용한다.</p>
+
+<p><img src="/assets/img/pexels/webgl-axes.png" alt="image-20180502143933511" /></p>
+
+<p>하지만 pixi.js는 Top-left 좌표계를 사용한다.</p>
+
+<p><img src="/assets/img/pexels/topLeft_coord.png" alt="image-20180502144339674" /></p>
+
+<p>즉, 내부적으로 좌표계 변환이 일어난다.</p>
+
+<h2 id="tldr">TL;DR</h2>
+
+<ul>
+  <li>내부적으로 사용하는 vertex shader에서 좌표계 변환을 한다.</li>
+</ul>
+
+<h2 id="pixijss-vertex-shader">pixi.js’s vertex shader</h2>
+
+<p>pixi.js 에서 사용하는 vertex shader에는 다음과 같은 좌표변환 함수가 공통적으로 존재한다.</p>
+
+<div class="language-c highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="n">attribute</span> <span class="n">vec2</span> <span class="n">aVertexPosition</span><span class="p">;</span>
+<span class="n">attribute</span> <span class="n">vec2</span> <span class="n">aTextureCoord</span><span class="p">;</span>
+
+<span class="n">uniform</span> <span class="n">mat3</span> <span class="n">projectionMatrix</span><span class="p">;</span>
+
+<span class="n">varying</span> <span class="n">vec2</span> <span class="n">vTextureCoord</span><span class="p">;</span>
+
+<span class="kt">void</span> <span class="nf">main</span><span class="p">(</span><span class="kt">void</span><span class="p">)</span>
+<span class="p">{</span>
+    <span class="n">gl_Position</span> <span class="o">=</span> <span class="n">vec4</span><span class="p">((</span><span class="n">projectionMatrix</span> <span class="o">*</span> <span class="n">vec3</span><span class="p">(</span><span class="n">aVertexPosition</span><span class="p">,</span> <span class="mi">1</span><span class="p">.</span><span class="mi">0</span><span class="p">)).</span><span class="n">xy</span><span class="p">,</span> <span class="mi">0</span><span class="p">.</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">.</span><span class="mi">0</span><span class="p">);</span>
+    <span class="n">vTextureCoord</span> <span class="o">=</span> <span class="n">aTextureCoord</span><span class="p">;</span>
+<span class="p">}</span>
+</code></pre></div></div>
+
+<p>gl_Position은 GPU에 vertext의 최종위치를 알려주는 변수다.</p>
+
+<p>projectionMatrix 와 값으로 입력받은 좌표(x,y)를 행렬곱하면,, top-left coordinates system으로 바꾼다는 의미인 것같은데…</p>
+
+<h2 id="projectmatrix">ProjectMatrix</h2>
+
+<p>pixi.js는 Matrix라는 하나의 Object class를 가지고 행렬을 조작한다.</p>
+
+<p>pixi.js내부에서 projectionMatrix는 다음과 같이 선언 되어 있다.</p>
+
+<div class="language-javascript highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">this</span><span class="p">.</span><span class="nx">projectionMatrix</span> <span class="o">=</span> <span class="k">new</span> <span class="nx">Matrix</span><span class="p">();</span>	
+</code></pre></div></div>
+
+<p>Matrix class는 다음과 같이 정의 되어 있다.</p>
+
+<div class="language-javascript highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="cm">/**
+ * The PixiJS Matrix class as an object, which makes it a lot faster,
+ * here is a representation of it :
+ * | a | c | tx|
+ * | b | d | ty|
+ * | 0 | 0 | 1 |
+ *
+ * @class
+ * @memberof PIXI
+ */</span>
+<span class="k">export</span> <span class="k">default</span> <span class="kd">class</span> <span class="nx">Matrix</span>
+<span class="p">{</span>
+    <span class="cm">/**
+     * @param {number} [a=1] - x scale
+     * @param {number} [b=0] - x skew
+     * @param {number} [c=0] - y skew
+     * @param {number} [d=1] - y scale
+     * @param {number} [tx=0] - x translation
+     * @param {number} [ty=0] - y translation
+     */</span>
+    <span class="kd">constructor</span><span class="p">(</span><span class="nx">a</span> <span class="o">=</span> <span class="mi">1</span><span class="p">,</span> <span class="nx">b</span> <span class="o">=</span> <span class="mi">0</span><span class="p">,</span> <span class="nx">c</span> <span class="o">=</span> <span class="mi">0</span><span class="p">,</span> <span class="nx">d</span> <span class="o">=</span> <span class="mi">1</span><span class="p">,</span> <span class="nx">tx</span> <span class="o">=</span> <span class="mi">0</span><span class="p">,</span> <span class="nx">ty</span> <span class="o">=</span> <span class="mi">0</span><span class="p">)</span> <span class="p">{</span>
+        <span class="p">...</span>
+    <span class="p">}</span>
+    <span class="p">...</span>
+<span class="p">}</span>
+</code></pre></div></div>
+
+<p>기본 값은 위와 같고, canvas의 크기에 따라 projectMatrix의 값을 다음과 같은 연산으로 변경한다.</p>
+
+<div class="language-javascript highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nx">pm</span><span class="p">.</span><span class="nx">a</span> <span class="o">=</span> <span class="mi">1</span> <span class="o">/</span> <span class="nx">destinationFrame</span><span class="p">.</span><span class="nx">width</span> <span class="o">*</span> <span class="mi">2</span><span class="p">;</span>
+<span class="nx">pm</span><span class="p">.</span><span class="nx">d</span> <span class="o">=</span> <span class="o">-</span><span class="mi">1</span> <span class="o">/</span> <span class="nx">destinationFrame</span><span class="p">.</span><span class="nx">height</span> <span class="o">*</span> <span class="mi">2</span><span class="p">;</span>
+
+<span class="nx">pm</span><span class="p">.</span><span class="nx">tx</span> <span class="o">=</span> <span class="o">-</span><span class="mi">1</span> <span class="o">-</span> <span class="p">(</span><span class="nx">sourceFrame</span><span class="p">.</span><span class="nx">x</span> <span class="o">*</span> <span class="nx">pm</span><span class="p">.</span><span class="nx">a</span><span class="p">);</span>
+<span class="nx">pm</span><span class="p">.</span><span class="nx">ty</span> <span class="o">=</span> <span class="mi">1</span> <span class="o">-</span> <span class="p">(</span><span class="nx">sourceFrame</span><span class="p">.</span><span class="nx">y</span> <span class="o">*</span> <span class="nx">pm</span><span class="p">.</span><span class="nx">d</span><span class="p">);</span>
+</code></pre></div></div>
+
+<p>결국 projectionMatrix는 TopLeft 좌표값이 World 좌표로 변경될 비례함수값 정도로 이해하고 있으면 된다.</p>
+
+<h2 id="example">Example</h2>
+
+<p>예를 들어, 넓이가 800 높이가 600인 canvas가 주어졌을 때, 이 사각형의 중점 (400, 300)이 webgl의 좌표 (0,0)으로 변환되는 과정을 보자.</p>
+
+<p>주어진 캔버스의 크기로 projection Matrix는 아래의 좌측 행렬(3 x 3)이고, 우측 행렬에 입력되는 값과</p>
+
+<p>행렬곱을 하면 값은 (0, 0, 1)이 나오게 된다.</p>
+
+\[\left(\begin{array}{cc} 
+0.0025 &amp; 0 &amp; -1\\
+0 &amp; -0.0033333333333333335 &amp; 1\\
+0 &amp; 0 &amp; 1
+\end{array}\right)
+\left(\begin{array}{cc} 
+400\\ 
+300\\
+1
+\end{array}\right)\]
+
+:ET
