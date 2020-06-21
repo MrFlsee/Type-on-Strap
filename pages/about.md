@@ -7,9 +7,9 @@ tags: [About, Archive]
 ---
 
 
-Programmer.
-Tennis.
-Film Camera.
-Guitar.
-Father.
+Programmer.  
+Tennis.  
+Film Camera.  
+Guitar.  
+Father.  
 
