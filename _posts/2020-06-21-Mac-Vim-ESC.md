@@ -8,7 +8,7 @@ tags: [vim, esc]
 이번에 mac을 다시 설정하면서 하나하나 설정 할 때마다 기록하기로 한다.
 
 
-```
+```bash
 brew cask hammerspoon
 ```
 
@@ -18,7 +18,7 @@ hammerspoon에서 config를 다음과 같이 수정한다.
 esc를 누를 때 바로 한영 전환을 하면 다른 프로그램의 영향을 받으므로,
 ctrl + [ 키를 누를 때 한영이 전환 되도록 설정
 
-```
+```lua
 local caps_mode = hs.hotkey.modal.new()
 local inputEnglish = "com.apple.keylayout.ABC"
 
